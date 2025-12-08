@@ -1,0 +1,1323 @@
+import { prisma } from '../config/database';
+import { NotFoundError, ConflictError } from '../utils/errors';
+import { logger } from '../utils/logger';
+import {
+  BlogInput,
+  UpdateBlogInput,
+  VideoInput,
+  UpdateVideoInput,
+  FAQInput,
+  UpdateFAQInput,
+  TestimonialInput,
+  UpdateTestimonialInput,
+  CourseInput,
+  UpdateCourseInput,
+  ShortCourseInput,
+  UpdateShortCourseInput,
+  CertifiedCourseInput,
+  UpdateCertifiedCourseInput,
+  EbookInput,
+  UpdateEbookInput,
+  StudyAbroadInput,
+  UpdateStudyAbroadInput,
+} from '../validators/cms';
+import { ContentStatus } from '@prisma/client';
+
+/**
+ * CMS service
+ * Handles all content management operations
+ */
+
+const resolveCreatedBy = (actorId: string): string | null => {
+  return actorId === 'admin' ? null : actorId;
+};
+
+// Blog services
+export const createBlog = async (blogData: BlogInput, createdBy: string) => {
+  try {
+    const existingBlog = await prisma.blog.findUnique({ where: { slug: blogData.slug } });
+    if (existingBlog) throw new ConflictError('Blog with this slug already exists');
+
+    const blog = await prisma.blog.create({
+      data: {
+        ...blogData,
+        createdBy: resolveCreatedBy(createdBy),
+      },
+      include: {
+        creator: {
+          select: { id: true, name: true, email: true },
+        },
+      },
+    });
+
+    logger.info(`Blog created: ${blog.title}`);
+    return blog;
+  } catch (error) {
+    logger.error('Create blog failed', error);
+    throw error;
+  }
+};
+
+export const getAllBlogs = async (page: number = 1, limit: number = 10, status?: string) => {
+  try {
+    const skip = (page - 1) * limit;
+    const where = status ? { status: status as any } : {};
+
+    const [blogs, total] = await Promise.all([
+      prisma.blog.findMany({
+        where,
+        skip,
+        take: limit,
+        include: {
+          creator: { select: { id: true, name: true, email: true } },
+        },
+        orderBy: { createdAt: 'desc' },
+      }),
+      prisma.blog.count({ where }),
+    ]);
+
+    return { blogs, pagination: { page, limit, total, totalPages: Math.ceil(total / limit) } };
+  } catch (error) {
+    logger.error('Get all blogs failed', error);
+    throw error;
+  }
+};
+
+export const getBlogById = async (blogId: string) => {
+  try {
+    const blog = await prisma.blog.findUnique({
+      where: { id: blogId },
+      include: { creator: { select: { id: true, name: true, email: true } } },
+    });
+    if (!blog) throw new NotFoundError('Blog not found');
+    return blog;
+  } catch (error) {
+    logger.error(`Get blog by ID failed: ${blogId}`, error);
+    throw error;
+  }
+};
+
+export const updateBlog = async (blogId: string, blogData: UpdateBlogInput) => {
+  try {
+    const existingBlog = await prisma.blog.findUnique({ where: { id: blogId } });
+    if (!existingBlog) throw new NotFoundError('Blog not found');
+
+    if (blogData.slug && blogData.slug !== existingBlog.slug) {
+      const slugExists = await prisma.blog.findUnique({ where: { slug: blogData.slug } });
+      if (slugExists) throw new ConflictError('Blog with this slug already exists');
+    }
+
+    const blog = await prisma.blog.update({
+      where: { id: blogId },
+      data: blogData,
+      include: { creator: { select: { id: true, name: true, email: true } } },
+    });
+
+    logger.info(`Blog updated: ${blog.title}`);
+    return blog;
+  } catch (error) {
+    logger.error(`Update blog failed: ${blogId}`, error);
+    throw error;
+  }
+};
+
+export const deleteBlog = async (blogId: string) => {
+  try {
+    const blog = await prisma.blog.findUnique({ where: { id: blogId } });
+    if (!blog) throw new NotFoundError('Blog not found');
+
+    await prisma.blog.delete({ where: { id: blogId } });
+    logger.info(`Blog deleted: ${blog.title}`);
+    return { message: 'Blog deleted successfully' };
+  } catch (error) {
+    logger.error(`Delete blog failed: ${blogId}`, error);
+    throw error;
+  }
+};
+
+// Video services (similar pattern)
+export const createVideo = async (videoData: VideoInput, createdBy: string) => {
+  try {
+    const existingVideo = await prisma.video.findUnique({ where: { slug: videoData.slug } });
+    if (existingVideo) throw new ConflictError('Video with this slug already exists');
+
+    const video = await prisma.video.create({
+      data: { ...videoData, createdBy: resolveCreatedBy(createdBy) },
+      include: { creator: { select: { id: true, name: true, email: true } } },
+    });
+
+    logger.info(`Video created: ${video.title}`);
+    return video;
+  } catch (error) {
+    logger.error('Create video failed', error);
+    throw error;
+  }
+};
+
+export const getAllVideos = async (page: number = 1, limit: number = 10, status?: string) => {
+  try {
+    const skip = (page - 1) * limit;
+    const where = status ? { status: status as any } : {};
+
+    const [videos, total] = await Promise.all([
+      prisma.video.findMany({
+        where,
+        skip,
+        take: limit,
+        include: {
+          creator: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            },
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+      }),
+      prisma.video.count({ where }),
+    ]);
+
+    return {
+      videos,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
+  } catch (error) {
+    logger.error('Get all videos failed', error);
+    throw error;
+  }
+};
+
+export const getVideoById = async (videoId: string) => {
+  try {
+    const video = await prisma.video.findUnique({
+      where: { id: videoId },
+      include: {
+        creator: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+      },
+    });
+
+    if (!video) {
+      throw new NotFoundError('Video not found');
+    }
+
+    return video;
+  } catch (error) {
+    logger.error(`Get video by ID failed: ${videoId}`, error);
+    throw error;
+  }
+};
+
+export const updateVideo = async (videoId: string, videoData: UpdateVideoInput) => {
+  try {
+    const existingVideo = await prisma.video.findUnique({
+      where: { id: videoId },
+    });
+
+    if (!existingVideo) {
+      throw new NotFoundError('Video not found');
+    }
+
+    if (videoData.slug && videoData.slug !== existingVideo.slug) {
+      const slugExists = await prisma.video.findUnique({
+        where: { slug: videoData.slug },
+      });
+
+      if (slugExists) {
+        throw new ConflictError('Video with this slug already exists');
+      }
+    }
+
+    const video = await prisma.video.update({
+      where: { id: videoId },
+      data: videoData,
+      include: {
+        creator: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+      },
+    });
+
+    logger.info(`Video updated: ${video.title}`);
+
+    return video;
+  } catch (error) {
+    logger.error(`Update video failed: ${videoId}`, error);
+    throw error;
+  }
+};
+
+export const deleteVideo = async (videoId: string) => {
+  try {
+    const video = await prisma.video.findUnique({
+      where: { id: videoId },
+    });
+
+    if (!video) {
+      throw new NotFoundError('Video not found');
+    }
+
+    await prisma.video.delete({
+      where: { id: videoId },
+    });
+
+    logger.info(`Video deleted: ${video.title}`);
+
+    return { message: 'Video deleted successfully' };
+  } catch (error) {
+    logger.error(`Delete video failed: ${videoId}`, error);
+    throw error;
+  }
+};
+
+// FAQ services
+export const createFAQ = async (faqData: FAQInput, createdBy: string) => {
+  try {
+    const faq = await prisma.fAQ.create({
+      data: {
+        ...faqData,
+        createdBy: resolveCreatedBy(createdBy),
+      },
+      include: {
+        creator: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+      },
+    });
+
+    logger.info(`FAQ created: ${faq.question}`);
+
+    return faq;
+  } catch (error) {
+    logger.error('Create FAQ failed', error);
+    throw error;
+  }
+};
+
+export const getAllFAQs = async (page: number = 1, limit: number = 10, category?: string) => {
+  try {
+    const skip = (page - 1) * limit;
+    const where = category ? { category } : {};
+
+    const [faqs, total] = await Promise.all([
+      prisma.fAQ.findMany({
+        where,
+        skip,
+        take: limit,
+        include: {
+          creator: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            },
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+      }),
+      prisma.fAQ.count({ where }),
+    ]);
+
+    return {
+      faqs,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
+  } catch (error) {
+    logger.error('Get all FAQs failed', error);
+    throw error;
+  }
+};
+
+export const getFAQById = async (faqId: string) => {
+  try {
+    const faq = await prisma.fAQ.findUnique({
+      where: { id: faqId },
+      include: {
+        creator: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+      },
+    });
+
+    if (!faq) {
+      throw new NotFoundError('FAQ not found');
+    }
+
+    return faq;
+  } catch (error) {
+    logger.error(`Get FAQ by ID failed: ${faqId}`, error);
+    throw error;
+  }
+};
+
+export const updateFAQ = async (faqId: string, faqData: UpdateFAQInput) => {
+  try {
+    const existingFAQ = await prisma.fAQ.findUnique({
+      where: { id: faqId },
+    });
+
+    if (!existingFAQ) {
+      throw new NotFoundError('FAQ not found');
+    }
+
+    const faq = await prisma.fAQ.update({
+      where: { id: faqId },
+      data: faqData,
+      include: {
+        creator: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+      },
+    });
+
+    logger.info(`FAQ updated: ${faq.question}`);
+
+    return faq;
+  } catch (error) {
+    logger.error(`Update FAQ failed: ${faqId}`, error);
+    throw error;
+  }
+};
+
+export const deleteFAQ = async (faqId: string) => {
+  try {
+    const faq = await prisma.fAQ.findUnique({
+      where: { id: faqId },
+    });
+
+    if (!faq) {
+      throw new NotFoundError('FAQ not found');
+    }
+
+    await prisma.fAQ.delete({
+      where: { id: faqId },
+    });
+
+    logger.info(`FAQ deleted: ${faq.question}`);
+
+    return { message: 'FAQ deleted successfully' };
+  } catch (error) {
+    logger.error(`Delete FAQ failed: ${faqId}`, error);
+    throw error;
+  }
+};
+
+// Testimonial services
+export const createTestimonial = async (testimonialData: TestimonialInput, createdBy: string) => {
+  try {
+    const testimonial = await prisma.testimonial.create({
+      data: {
+        ...testimonialData,
+        createdBy: resolveCreatedBy(createdBy),
+      },
+      include: {
+        creator: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+      },
+    });
+
+    logger.info(`Testimonial created: ${testimonial.authorName}`);
+
+    return testimonial;
+  } catch (error) {
+    logger.error('Create testimonial failed', error);
+    throw error;
+  }
+};
+
+export const getAllTestimonials = async (page: number = 1, limit: number = 10, status?: string) => {
+  try {
+    const skip = (page - 1) * limit;
+    const where = status ? { status: status as any } : {};
+
+    const [testimonials, total] = await Promise.all([
+      prisma.testimonial.findMany({
+        where,
+        skip,
+        take: limit,
+        include: {
+          creator: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            },
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+      }),
+      prisma.testimonial.count({ where }),
+    ]);
+
+    return {
+      testimonials,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
+  } catch (error) {
+    logger.error('Get all testimonials failed', error);
+    throw error;
+  }
+};
+
+export const getTestimonialById = async (testimonialId: string) => {
+  try {
+    const testimonial = await prisma.testimonial.findUnique({
+      where: { id: testimonialId },
+      include: {
+        creator: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+      },
+    });
+
+    if (!testimonial) {
+      throw new NotFoundError('Testimonial not found');
+    }
+
+    return testimonial;
+  } catch (error) {
+    logger.error(`Get testimonial by ID failed: ${testimonialId}`, error);
+    throw error;
+  }
+};
+
+export const updateTestimonial = async (testimonialId: string, testimonialData: UpdateTestimonialInput) => {
+  try {
+    const existingTestimonial = await prisma.testimonial.findUnique({
+      where: { id: testimonialId },
+    });
+
+    if (!existingTestimonial) {
+      throw new NotFoundError('Testimonial not found');
+    }
+
+    const testimonial = await prisma.testimonial.update({
+      where: { id: testimonialId },
+      data: testimonialData,
+      include: {
+        creator: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+      },
+    });
+
+    logger.info(`Testimonial updated: ${testimonial.authorName}`);
+
+    return testimonial;
+  } catch (error) {
+    logger.error(`Update testimonial failed: ${testimonialId}`, error);
+    throw error;
+  }
+};
+
+export const deleteTestimonial = async (testimonialId: string) => {
+  try {
+    const testimonial = await prisma.testimonial.findUnique({
+      where: { id: testimonialId },
+    });
+
+    if (!testimonial) {
+      throw new NotFoundError('Testimonial not found');
+    }
+
+    await prisma.testimonial.delete({
+      where: { id: testimonialId },
+    });
+
+    logger.info(`Testimonial deleted: ${testimonial.authorName}`);
+
+    return { message: 'Testimonial deleted successfully' };
+  } catch (error) {
+    logger.error(`Delete testimonial failed: ${testimonialId}`, error);
+    throw error;
+  }
+};
+
+// Course services
+export const createCourse = async (courseData: CourseInput, createdBy: string) => {
+  try {
+    const existingCourse = await prisma.course.findUnique({ where: { slug: courseData.slug } });
+    if (existingCourse) throw new ConflictError('Course with this slug already exists');
+
+    const course = await prisma.course.create({
+      data: {
+        ...courseData,
+        createdBy: resolveCreatedBy(createdBy),
+      },
+      include: {
+        creator: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+      },
+    });
+
+    logger.info(`Course created: ${course.title}`);
+    return course;
+  } catch (error) {
+    logger.error('Create course failed', error);
+    throw error;
+  }
+};
+
+export const getAllCourses = async (page: number = 1, limit: number = 10, status?: string) => {
+  try {
+    const skip = (page - 1) * limit;
+    const where = status ? { status: status as any } : {};
+
+    const [courses, total] = await Promise.all([
+      prisma.course.findMany({
+        where,
+        skip,
+        take: limit,
+        include: {
+          creator: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            },
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+      }),
+      prisma.course.count({ where }),
+    ]);
+
+    return {
+      courses,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
+  } catch (error) {
+    logger.error('Get all courses failed', error);
+    throw error;
+  }
+};
+
+export const getCourseById = async (courseId: string) => {
+  try {
+    const course = await prisma.course.findUnique({
+      where: { id: courseId },
+      include: {
+        creator: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+      },
+    });
+
+    if (!course) {
+      throw new NotFoundError('Course not found');
+    }
+
+    return course;
+  } catch (error) {
+    logger.error(`Get course by ID failed: ${courseId}`, error);
+    throw error;
+  }
+};
+
+export const updateCourse = async (courseId: string, courseData: UpdateCourseInput) => {
+  try {
+    const existingCourse = await prisma.course.findUnique({ where: { id: courseId } });
+    if (!existingCourse) throw new NotFoundError('Course not found');
+
+    if (courseData.slug && courseData.slug !== existingCourse.slug) {
+      const slugExists = await prisma.course.findUnique({ where: { slug: courseData.slug } });
+      if (slugExists) throw new ConflictError('Course with this slug already exists');
+    }
+
+    const course = await prisma.course.update({
+      where: { id: courseId },
+      data: courseData,
+      include: {
+        creator: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+      },
+    });
+
+    logger.info(`Course updated: ${course.title}`);
+    return course;
+  } catch (error) {
+    logger.error(`Update course failed: ${courseId}`, error);
+    throw error;
+  }
+};
+
+export const deleteCourse = async (courseId: string) => {
+  try {
+    const course = await prisma.course.findUnique({ where: { id: courseId } });
+    if (!course) throw new NotFoundError('Course not found');
+
+    await prisma.course.delete({ where: { id: courseId } });
+    logger.info(`Course deleted: ${course.title}`);
+    return { message: 'Course deleted successfully' };
+  } catch (error) {
+    logger.error(`Delete course failed: ${courseId}`, error);
+    throw error;
+  }
+};
+
+// Short Course services
+export const createShortCourse = async (shortCourseData: ShortCourseInput, createdBy: string) => {
+  try {
+    logger.info(`Creating short course with data:`, { shortCourseData, createdBy });
+    
+    const existingShortCourse = await prisma.shortCourse.findUnique({ where: { slug: shortCourseData.slug } });
+    if (existingShortCourse) throw new ConflictError('Short course with this slug already exists');
+
+    const resolvedCreatedBy = resolveCreatedBy(createdBy);
+    logger.info(`Resolved createdBy: ${resolvedCreatedBy}`);
+
+    const shortCourse = await prisma.shortCourse.create({
+      data: {
+        ...shortCourseData,
+        createdBy: resolvedCreatedBy,
+      },
+      include: {
+        creator: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+      },
+    });
+
+    logger.info(`Short course created: ${shortCourse.title}`);
+    return shortCourse;
+  } catch (error) {
+    logger.error('Create short course failed', error);
+    throw error;
+  }
+};
+
+export const getAllShortCourses = async (page: number = 1, limit: number = 10, status?: string) => {
+  try {
+    const skip = (page - 1) * limit;
+    const where = status ? { status: status as ContentStatus } : {};
+
+    const [shortCourses, total] = await Promise.all([
+      prisma.shortCourse.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          creator: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            },
+          },
+        },
+      }),
+      prisma.shortCourse.count({ where }),
+    ]);
+
+    const pagination = {
+      page,
+      limit,
+      total,
+      totalPages: Math.ceil(total / limit),
+      hasNext: page < Math.ceil(total / limit),
+      hasPrev: page > 1,
+    };
+
+    return { shortCourses, pagination };
+  } catch (error) {
+    logger.error('Get all short courses failed', error);
+    throw error;
+  }
+};
+
+export const getShortCourseById = async (shortCourseId: string) => {
+  try {
+    const shortCourse = await prisma.shortCourse.findUnique({
+      where: { id: shortCourseId },
+      include: {
+        creator: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+      },
+    });
+
+    if (!shortCourse) {
+      throw new NotFoundError('Short course not found');
+    }
+
+    return shortCourse;
+  } catch (error) {
+    logger.error(`Get short course by ID failed: ${shortCourseId}`, error);
+    throw error;
+  }
+};
+
+export const updateShortCourse = async (shortCourseId: string, shortCourseData: UpdateShortCourseInput) => {
+  try {
+    const existingShortCourse = await prisma.shortCourse.findUnique({ where: { id: shortCourseId } });
+    if (!existingShortCourse) throw new NotFoundError('Short course not found');
+
+    if (shortCourseData.slug && shortCourseData.slug !== existingShortCourse.slug) {
+      const slugExists = await prisma.shortCourse.findUnique({ where: { slug: shortCourseData.slug } });
+      if (slugExists) throw new ConflictError('Short course with this slug already exists');
+    }
+
+    const shortCourse = await prisma.shortCourse.update({
+      where: { id: shortCourseId },
+      data: shortCourseData,
+      include: {
+        creator: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+      },
+    });
+
+    logger.info(`Short course updated: ${shortCourse.title}`);
+    return shortCourse;
+  } catch (error) {
+    logger.error(`Update short course failed: ${shortCourseId}`, error);
+    throw error;
+  }
+};
+
+export const deleteShortCourse = async (shortCourseId: string) => {
+  try {
+    const shortCourse = await prisma.shortCourse.findUnique({ where: { id: shortCourseId } });
+    if (!shortCourse) throw new NotFoundError('Short course not found');
+
+    await prisma.shortCourse.delete({ where: { id: shortCourseId } });
+
+    logger.info(`Short course deleted: ${shortCourse.title}`);
+    return { deleted: true };
+  } catch (error) {
+    logger.error(`Delete short course failed: ${shortCourseId}`, error);
+    throw error;
+  }
+};
+
+// Certified Course services
+export const createCertifiedCourse = async (certifiedCourseData: CertifiedCourseInput, createdBy: string) => {
+  try {
+    const existingCertifiedCourse = await prisma.certifiedCourse.findUnique({ where: { slug: certifiedCourseData.slug } });
+    if (existingCertifiedCourse) throw new ConflictError('Certified course with this slug already exists');
+
+    const certifiedCourse = await prisma.certifiedCourse.create({
+      data: {
+        ...certifiedCourseData,
+        createdBy: resolveCreatedBy(createdBy),
+      },
+      include: {
+        creator: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+      },
+    });
+
+    logger.info(`Certified course created: ${certifiedCourse.title}`);
+    return certifiedCourse;
+  } catch (error) {
+    logger.error('Create certified course failed', error);
+    throw error;
+  }
+};
+
+export const getAllCertifiedCourses = async (page: number = 1, limit: number = 10, status?: string) => {
+  try {
+    const skip = (page - 1) * limit;
+    const where = status ? { status: status as ContentStatus } : {};
+
+    const [certifiedCourses, total] = await Promise.all([
+      prisma.certifiedCourse.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          creator: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            },
+          },
+        },
+      }),
+      prisma.certifiedCourse.count({ where }),
+    ]);
+
+    const pagination = {
+      page,
+      limit,
+      total,
+      totalPages: Math.ceil(total / limit),
+      hasNext: page < Math.ceil(total / limit),
+      hasPrev: page > 1,
+    };
+
+    return { certifiedCourses, pagination };
+  } catch (error) {
+    logger.error('Get all certified courses failed', error);
+    throw error;
+  }
+};
+
+export const getCertifiedCourseById = async (certifiedCourseId: string) => {
+  try {
+    const certifiedCourse = await prisma.certifiedCourse.findUnique({
+      where: { id: certifiedCourseId },
+      include: {
+        creator: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+      },
+    });
+
+    if (!certifiedCourse) {
+      throw new NotFoundError('Certified course not found');
+    }
+
+    return certifiedCourse;
+  } catch (error) {
+    logger.error(`Get certified course by ID failed: ${certifiedCourseId}`, error);
+    throw error;
+  }
+};
+
+export const updateCertifiedCourse = async (certifiedCourseId: string, certifiedCourseData: UpdateCertifiedCourseInput) => {
+  try {
+    const existingCertifiedCourse = await prisma.certifiedCourse.findUnique({ where: { id: certifiedCourseId } });
+    if (!existingCertifiedCourse) throw new NotFoundError('Certified course not found');
+
+    if (certifiedCourseData.slug && certifiedCourseData.slug !== existingCertifiedCourse.slug) {
+      const slugExists = await prisma.certifiedCourse.findUnique({ where: { slug: certifiedCourseData.slug } });
+      if (slugExists) throw new ConflictError('Certified course with this slug already exists');
+    }
+
+    const certifiedCourse = await prisma.certifiedCourse.update({
+      where: { id: certifiedCourseId },
+      data: certifiedCourseData,
+      include: {
+        creator: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+      },
+    });
+
+    logger.info(`Certified course updated: ${certifiedCourse.title}`);
+    return certifiedCourse;
+  } catch (error) {
+    logger.error(`Update certified course failed: ${certifiedCourseId}`, error);
+    throw error;
+  }
+};
+
+export const deleteCertifiedCourse = async (certifiedCourseId: string) => {
+  try {
+    const certifiedCourse = await prisma.certifiedCourse.findUnique({ where: { id: certifiedCourseId } });
+    if (!certifiedCourse) throw new NotFoundError('Certified course not found');
+
+    await prisma.certifiedCourse.delete({ where: { id: certifiedCourseId } });
+
+    logger.info(`Certified course deleted: ${certifiedCourse.title}`);
+    return { deleted: true };
+  } catch (error) {
+    logger.error(`Delete certified course failed: ${certifiedCourseId}`, error);
+    throw error;
+  }
+};
+
+// Ebook services
+export const createEbook = async (ebookData: EbookInput, createdBy: string) => {
+  try {
+    const existingEbook = await prisma.ebook.findUnique({ where: { slug: ebookData.slug } });
+    if (existingEbook) throw new ConflictError('Ebook with this slug already exists');
+
+    const ebook = await prisma.ebook.create({
+      data: {
+        ...ebookData,
+        createdBy: resolveCreatedBy(createdBy),
+      },
+      include: {
+        creator: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+      },
+    });
+
+    logger.info(`Ebook created: ${ebook.title}`);
+    return ebook;
+  } catch (error) {
+    logger.error('Create ebook failed', error);
+    throw error;
+  }
+};
+
+export const getAllEbooks = async (page: number = 1, limit: number = 10, status?: string) => {
+  try {
+    const skip = (page - 1) * limit;
+    const where = status ? { status: status as any } : {};
+
+    const [ebooks, total] = await Promise.all([
+      prisma.ebook.findMany({
+        where,
+        skip,
+        take: limit,
+        include: {
+          creator: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            },
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+      }),
+      prisma.ebook.count({ where }),
+    ]);
+
+    return {
+      ebooks,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
+  } catch (error) {
+    logger.error('Get all ebooks failed', error);
+    throw error;
+  }
+};
+
+export const getEbookById = async (ebookId: string) => {
+  try {
+    const ebook = await prisma.ebook.findUnique({
+      where: { id: ebookId },
+      include: {
+        creator: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+      },
+    });
+
+    if (!ebook) {
+      throw new NotFoundError('Ebook not found');
+    }
+
+    return ebook;
+  } catch (error) {
+    logger.error(`Get ebook by ID failed: ${ebookId}`, error);
+    throw error;
+  }
+};
+
+export const updateEbook = async (ebookId: string, ebookData: UpdateEbookInput) => {
+  try {
+    const existingEbook = await prisma.ebook.findUnique({
+      where: { id: ebookId },
+    });
+
+    if (!existingEbook) {
+      throw new NotFoundError('Ebook not found');
+    }
+
+    if (ebookData.slug && ebookData.slug !== existingEbook.slug) {
+      const slugExists = await prisma.ebook.findUnique({
+        where: { slug: ebookData.slug },
+      });
+
+      if (slugExists) {
+        throw new ConflictError('Ebook with this slug already exists');
+      }
+    }
+
+    const ebook = await prisma.ebook.update({
+      where: { id: ebookId },
+      data: ebookData,
+      include: {
+        creator: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+      },
+    });
+
+    logger.info(`Ebook updated: ${ebook.title}`);
+
+    return ebook;
+  } catch (error) {
+    logger.error(`Update ebook failed: ${ebookId}`, error);
+    throw error;
+  }
+};
+
+export const deleteEbook = async (ebookId: string) => {
+  try {
+    const ebook = await prisma.ebook.findUnique({
+      where: { id: ebookId },
+    });
+
+    if (!ebook) {
+      throw new NotFoundError('Ebook not found');
+    }
+
+    await prisma.ebook.delete({
+      where: { id: ebookId },
+    });
+
+    logger.info(`Ebook deleted: ${ebook.title}`);
+
+    return { message: 'Ebook deleted successfully' };
+  } catch (error) {
+    logger.error(`Delete ebook failed: ${ebookId}`, error);
+    throw error;
+  }
+};
+
+// Study Abroad services
+export const createStudyAbroad = async (studyAbroadData: StudyAbroadInput, createdBy: string) => {
+  try {
+    const studyAbroad = await prisma.studyAbroad.create({
+      data: {
+        ...studyAbroadData,
+        createdBy: resolveCreatedBy(createdBy),
+      },
+      include: {
+        creator: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+      },
+    });
+
+    logger.info(`Study Abroad created: ${studyAbroad.city}`);
+    return studyAbroad;
+  } catch (error) {
+    logger.error('Create study abroad failed', error);
+    throw error;
+  }
+};
+
+export const getAllStudyAbroad = async (page: number = 1, limit: number = 10, status?: string) => {
+  try {
+    const skip = (page - 1) * limit;
+    const where = status ? { status: status as any } : {};
+
+    const [studyAbroad, total] = await Promise.all([
+      prisma.studyAbroad.findMany({
+        where,
+        skip,
+        take: limit,
+        include: {
+          creator: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            },
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+      }),
+      prisma.studyAbroad.count({ where }),
+    ]);
+
+    return {
+      studyAbroad,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
+  } catch (error) {
+    logger.error('Get all study abroad failed', error);
+    throw error;
+  }
+};
+
+export const getStudyAbroadById = async (studyAbroadId: string) => {
+  try {
+    const studyAbroad = await prisma.studyAbroad.findUnique({
+      where: { id: studyAbroadId },
+      include: {
+        creator: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+      },
+    });
+
+    if (!studyAbroad) {
+      throw new NotFoundError('Study abroad record not found');
+    }
+
+    return studyAbroad;
+  } catch (error) {
+    logger.error(`Get study abroad by ID failed: ${studyAbroadId}`, error);
+    throw error;
+  }
+};
+
+export const updateStudyAbroad = async (studyAbroadId: string, studyAbroadData: UpdateStudyAbroadInput) => {
+  try {
+    const existingStudyAbroad = await prisma.studyAbroad.findUnique({
+      where: { id: studyAbroadId },
+    });
+
+    if (!existingStudyAbroad) {
+      throw new NotFoundError('Study abroad record not found');
+    }
+
+    const studyAbroad = await prisma.studyAbroad.update({
+      where: { id: studyAbroadId },
+      data: studyAbroadData,
+      include: {
+        creator: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+      },
+    });
+
+    logger.info(`Study abroad updated: ${studyAbroad.city}`);
+    return studyAbroad;
+  } catch (error) {
+    logger.error(`Update study abroad failed: ${studyAbroadId}`, error);
+    throw error;
+  }
+};
+
+export const deleteStudyAbroad = async (studyAbroadId: string) => {
+  try {
+    const studyAbroad = await prisma.studyAbroad.findUnique({
+      where: { id: studyAbroadId },
+    });
+
+    if (!studyAbroad) {
+      throw new NotFoundError('Study abroad record not found');
+    }
+
+    await prisma.studyAbroad.delete({
+      where: { id: studyAbroadId },
+    });
+
+    logger.info(`Study abroad deleted: ${studyAbroad.city}`);
+    return { message: 'Study abroad record deleted successfully' };
+  } catch (error) {
+    logger.error(`Delete study abroad failed: ${studyAbroadId}`, error);
+    throw error;
+  }
+};

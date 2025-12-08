@@ -1,0 +1,472 @@
+/* Purple Theme CSS for UpSkillWay CRM Dashboard */
+/* Based on the modern purple theme from the provided image */
+
+:root {
+  /* Primary Purple Colors */
+  --purple-25: #faf7ff;
+  --purple-50: #f3f0ff;
+  --purple-100: #e6e0ff;
+  --purple-200: #d1c4ff;
+  --purple-300: #b8a3ff;
+  --purple-400: #9f82ff;
+  --purple-500: #8661ff;
+  --purple-600: #6d40ff;
+  --purple-700: #541fff;
+  --purple-800: #3b00e6;
+  --purple-900: #2200cc;
+
+  /* Secondary Colors */
+  --gray-50: #f9fafb;
+  --gray-100: #f3f4f6;
+  --gray-200: #e5e7eb;
+  --gray-300: #d1d5db;
+  --gray-400: #9ca3af;
+  --gray-500: #6b7280;
+  --gray-600: #4b5563;
+  --gray-700: #374151;
+  --gray-800: #1f2937;
+  --gray-900: #111827;
+
+  /* Accent Colors */
+  --success: #10b981;
+  --warning: #f59e0b;
+  --error: #ef4444;
+  --info: #3b82f6;
+}
+
+/* Global Purple Theme Styles */
+.purple-theme {
+  /* Background Colors */
+  --bg-primary: #ffffff;
+  --bg-secondary: var(--purple-25);
+  --bg-tertiary: var(--purple-50);
+  --bg-card: #ffffff;
+  --bg-hover: var(--purple-50);
+
+  /* Text Colors */
+  --text-primary: var(--gray-900);
+  --text-secondary: var(--gray-600);
+  --text-tertiary: var(--gray-500);
+  --text-accent: var(--purple-600);
+
+  /* Border Colors */
+  --border-primary: var(--purple-200);
+  --border-secondary: var(--purple-300);
+  --border-focus: var(--purple-500);
+
+  /* Button Colors */
+  --btn-primary: var(--purple-600);
+  --btn-primary-hover: var(--purple-700);
+  --btn-secondary: var(--purple-50);
+  --btn-secondary-hover: var(--purple-100);
+  --btn-text: var(--purple-600);
+  --btn-text-hover: var(--purple-700);
+}
+
+/* CRM Dashboard Specific Styles */
+.crm-dashboard {
+  background: linear-gradient(135deg, var(--purple-25) 0%, #ffffff 100%);
+  min-height: 100vh;
+}
+
+/* Card Styles */
+.crm-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-primary);
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(109, 64, 255, 0.1);
+  transition: all 0.3s ease;
+}
+
+.crm-card:hover {
+  box-shadow: 0 4px 12px rgba(109, 64, 255, 0.15);
+  border-color: var(--border-secondary);
+}
+
+/* KPI Card Styles */
+.kpi-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-primary);
+  border-radius: 16px;
+  padding: 24px;
+  position: relative;
+  overflow: hidden;
+}
+
+.kpi-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, var(--purple-500), var(--purple-600));
+}
+
+.kpi-card .icon {
+  width: 48px;
+  height: 48px;
+  background: var(--purple-100);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--purple-600);
+}
+
+.kpi-card .value {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 8px 0 4px 0;
+}
+
+.kpi-card .label {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+/* Button Styles */
+.btn-primary {
+  background: var(--btn-primary);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 12px 24px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.btn-primary:hover {
+  background: var(--btn-primary-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(109, 64, 255, 0.3);
+}
+
+.btn-secondary {
+  background: var(--btn-secondary);
+  color: var(--btn-text);
+  border: 1px solid var(--border-primary);
+  border-radius: 8px;
+  padding: 12px 24px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.btn-secondary:hover {
+  background: var(--btn-secondary-hover);
+  border-color: var(--border-secondary);
+}
+
+/* Status Badge Styles */
+.status-badge {
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.status-active {
+  background: var(--purple-100);
+  color: var(--purple-700);
+}
+
+.status-pending {
+  background: var(--purple-50);
+  color: var(--purple-600);
+}
+
+.status-completed {
+  background: var(--purple-200);
+  color: var(--purple-800);
+}
+
+.status-cancelled {
+  background: var(--purple-25);
+  color: var(--purple-500);
+}
+
+/* Form Styles */
+.form-input {
+  border: 1px solid var(--border-primary);
+  border-radius: 8px;
+  padding: 12px 16px;
+  font-size: 0.875rem;
+  transition: all 0.3s ease;
+  background: var(--bg-primary);
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: var(--border-focus);
+  box-shadow: 0 0 0 3px rgba(109, 64, 255, 0.1);
+}
+
+.form-select {
+  border: 1px solid var(--border-primary);
+  border-radius: 8px;
+  padding: 12px 16px;
+  font-size: 0.875rem;
+  background: var(--bg-primary);
+  cursor: pointer;
+}
+
+.form-select:focus {
+  outline: none;
+  border-color: var(--border-focus);
+  box-shadow: 0 0 0 3px rgba(109, 64, 255, 0.1);
+}
+
+/* Table Styles */
+.crm-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--bg-card);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(109, 64, 255, 0.1);
+}
+
+.crm-table th {
+  background: var(--purple-50);
+  color: var(--purple-700);
+  font-weight: 600;
+  padding: 16px;
+  text-align: left;
+  border-bottom: 1px solid var(--border-primary);
+}
+
+.crm-table td {
+  padding: 16px;
+  border-bottom: 1px solid var(--gray-100);
+  color: var(--text-primary);
+}
+
+.crm-table tr:hover {
+  background: var(--bg-hover);
+}
+
+/* Chart Container Styles */
+.chart-container {
+  background: var(--bg-card);
+  border: 1px solid var(--border-primary);
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 1px 3px rgba(109, 64, 255, 0.1);
+}
+
+/* Progress Bar Styles */
+.progress-bar {
+  width: 100%;
+  height: 8px;
+  background: var(--gray-200);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--purple-500), var(--purple-600));
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+/* Loading Spinner */
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid var(--purple-100);
+  border-top: 4px solid var(--purple-600);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Quick Action Cards */
+.quick-action-card {
+  background: var(--bg-card);
+  border: 2px dashed var(--border-primary);
+  border-radius: 12px;
+  padding: 24px;
+  text-align: center;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.quick-action-card:hover {
+  border-color: var(--border-focus);
+  background: var(--bg-hover);
+  transform: translateY(-2px);
+}
+
+.quick-action-card .icon {
+  width: 32px;
+  height: 32px;
+  color: var(--purple-400);
+  margin: 0 auto 12px;
+}
+
+.quick-action-card .text {
+  color: var(--purple-600);
+  font-weight: 600;
+}
+
+/* Activity Feed Styles */
+.activity-item {
+  display: flex;
+  align-items: center;
+  padding: 12px;
+  border-radius: 8px;
+  transition: background 0.3s ease;
+}
+
+.activity-item:hover {
+  background: var(--bg-hover);
+}
+
+.activity-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 12px;
+  flex-shrink: 0;
+}
+
+.activity-dot.active { background: var(--purple-500); }
+.activity-dot.pending { background: var(--purple-400); }
+.activity-dot.completed { background: var(--purple-600); }
+.activity-dot.cancelled { background: var(--purple-300); }
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .kpi-card {
+    padding: 16px;
+  }
+  
+  .kpi-card .value {
+    font-size: 1.5rem;
+  }
+  
+  .btn-primary,
+  .btn-secondary {
+    padding: 10px 20px;
+    font-size: 0.875rem;
+  }
+  
+  .crm-table th,
+  .crm-table td {
+    padding: 12px;
+  }
+}
+
+/* Dark Mode Support */
+@media (prefers-color-scheme: dark) {
+  .purple-theme {
+    --bg-primary: var(--gray-900);
+    --bg-secondary: var(--gray-800);
+    --bg-tertiary: var(--gray-700);
+    --bg-card: var(--gray-800);
+    --bg-hover: var(--gray-700);
+    
+    --text-primary: #ffffff;
+    --text-secondary: var(--gray-300);
+    --text-tertiary: var(--gray-400);
+    
+    --border-primary: var(--gray-600);
+    --border-secondary: var(--gray-500);
+  }
+}
+
+/* Animation Classes */
+.fade-in {
+  animation: fadeIn 0.5s ease-in;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.slide-in {
+  animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+  from { transform: translateX(-20px); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+/* Utility Classes */
+.text-purple { color: var(--purple-600); }
+.bg-purple { background: var(--purple-600); }
+.border-purple { border-color: var(--purple-600); }
+
+.text-purple-light { color: var(--purple-500); }
+.bg-purple-light { background: var(--purple-500); }
+
+.text-purple-dark { color: var(--purple-700); }
+.bg-purple-dark { background: var(--purple-700); }
+
+/* Additional Purple Shades for Tailwind */
+.bg-purple-25 { background-color: var(--purple-25); }
+.bg-purple-50 { background-color: var(--purple-50); }
+.bg-purple-100 { background-color: var(--purple-100); }
+.bg-purple-200 { background-color: var(--purple-200); }
+.bg-purple-300 { background-color: var(--purple-300); }
+.bg-purple-400 { background-color: var(--purple-400); }
+.bg-purple-500 { background-color: var(--purple-500); }
+.bg-purple-600 { background-color: var(--purple-600); }
+.bg-purple-700 { background-color: var(--purple-700); }
+.bg-purple-800 { background-color: var(--purple-800); }
+.bg-purple-900 { background-color: var(--purple-900); }
+
+.text-purple-25 { color: var(--purple-25); }
+.text-purple-50 { color: var(--purple-50); }
+.text-purple-100 { color: var(--purple-100); }
+.text-purple-200 { color: var(--purple-200); }
+.text-purple-300 { color: var(--purple-300); }
+.text-purple-400 { color: var(--purple-400); }
+.text-purple-500 { color: var(--purple-500); }
+.text-purple-600 { color: var(--purple-600); }
+.text-purple-700 { color: var(--purple-700); }
+.text-purple-800 { color: var(--purple-800); }
+.text-purple-900 { color: var(--purple-900); }
+
+.border-purple-25 { border-color: var(--purple-25); }
+.border-purple-50 { border-color: var(--purple-50); }
+.border-purple-100 { border-color: var(--purple-100); }
+.border-purple-200 { border-color: var(--purple-200); }
+.border-purple-300 { border-color: var(--purple-300); }
+.border-purple-400 { border-color: var(--purple-400); }
+.border-purple-500 { border-color: var(--purple-500); }
+.border-purple-600 { border-color: var(--purple-600); }
+.border-purple-700 { border-color: var(--purple-700); }
+.border-purple-800 { border-color: var(--purple-800); }
+.border-purple-900 { border-color: var(--purple-900); }
+
+/* Focus States */
+.focus-purple:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(109, 64, 255, 0.1);
+  border-color: var(--purple-500);
+}
+
+/* Hover Effects */
+.hover-purple:hover {
+  background: var(--purple-50);
+  color: var(--purple-700);
+}
+
+.hover-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(109, 64, 255, 0.15);
+}

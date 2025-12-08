@@ -1,0 +1,4 @@
+-- Add all new enum values to LeadStage
+ALTER TYPE "LeadStage" ADD VALUE 'IN_CONVERSATION';
+ALTER TYPE "LeadStage" ADD VALUE 'EMAIL_WHATSAPP';
+ALTER TYPE "LeadStage" ADD VALUE 'CONVERT';

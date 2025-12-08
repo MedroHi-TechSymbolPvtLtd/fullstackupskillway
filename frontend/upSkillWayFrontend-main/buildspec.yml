@@ -1,0 +1,38 @@
+version: 0.2
+
+phases:
+  install:
+    commands:
+      - echo "Ensuring Docker is available in CodeBuild..."
+
+  pre_build:
+    commands:
+      - echo "Logging into Amazon ECR..."
+      - aws ecr get-login-password --region ap-south-1 | docker login --username AWS --password-stdin 488479524661.dkr.ecr.ap-south-1.amazonaws.com
+
+      - echo "Making scripts executable..."
+      - chmod +x scripts/*.sh
+
+  build:
+    commands:
+      - echo "Building ARM64 Docker image..."
+      - docker build --platform=linux/arm64 -t upskillway .
+
+      - echo "Tagging latest image..."
+      - docker tag upskillway:latest 488479524661.dkr.ecr.ap-south-1.amazonaws.com/upskillway:latest
+
+  post_build:
+    commands:
+      - echo "Pushing image to ECR..."
+      - docker push 488479524661.dkr.ecr.ap-south-1.amazonaws.com/upskillway:latest
+      - echo "Build completed on `date`"
+
+artifacts:
+  files:
+    - appspec.yml
+    - scripts/**
+    - Dockerfile
+    - nginx.conf
+    - certs/**
+    - .env.production
+  discard-paths: no

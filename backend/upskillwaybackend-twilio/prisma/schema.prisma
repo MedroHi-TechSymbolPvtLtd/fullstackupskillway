@@ -1,0 +1,816 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                String             @id @default(uuid()) @db.Uuid
+  name              String
+  email             String             @unique
+  phone             String?
+  passwordHash      String
+  role              UserRole           @default(sales)
+  isActive          Boolean            @default(true)
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  blogs             Blog[]
+  certifiedCourses  CertifiedCourse[]
+  assignedColleges  College[]          @relation("AssignedSales")
+  courses           Course[]
+  ebooks            Ebook[]
+  faqs              FAQ[]
+  assignedLeads     Lead[]             @relation("AssignedSales")
+  refreshTokens     RefreshToken[]
+  shortCourses      ShortCourse[]
+  studyAbroad       StudyAbroad[]
+  testimonials      Testimonial[]
+  trainerBookings   TrainerBooking[]
+  trainingPrograms  TrainingProgram[]
+  videos            Video[]
+  whatsappMessages      WhatsAppMessage[]
+  emailLogs             EmailLog[]
+  emailCampaignLogs      EmailCampaignLog[]
+  emailTemplates         EmailTemplate[]         @relation("EmailTemplateCreator")
+  emailAutomations       EmailAutomation[]       @relation("EmailAutomationCreator")
+  notifications          Notification[]          @relation("UserNotifications")
+  referralPartners       ReferralPartner[]
+  imageAssets            ImageAsset[]
+  referralCodes          ReferralCode[]
+
+  @@map("users")
+}
+
+model RefreshToken {
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String?   @db.Uuid
+  role      TokenRole
+  token     String    @unique
+  expiresAt DateTime
+  revoked   Boolean   @default(false)
+  createdAt DateTime  @default(now())
+  user      User?     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("refresh_tokens")
+}
+
+model Blog {
+  id        String        @id @default(uuid()) @db.Uuid
+  title     String
+  slug      String        @unique
+  excerpt   String?
+  content   String
+  imageUrl  String?
+  category  String?
+  tags      String[]
+  status    ContentStatus @default(draft)
+  createdBy String?       @db.Uuid
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+  creator   User?         @relation(fields: [createdBy], references: [id])
+
+  @@map("blogs")
+}
+
+model Video {
+  id            String        @id @default(uuid()) @db.Uuid
+  title         String
+  slug          String        @unique
+  description   String?
+  videoUrl      String
+  tags          String[]
+  masteredTools Json?
+  faqs          Json?
+  status        ContentStatus @default(draft)
+  createdBy     String?       @db.Uuid
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  creator       User?         @relation(fields: [createdBy], references: [id])
+
+  @@map("videos")
+}
+
+model FAQ {
+  id        String   @id @default(uuid()) @db.Uuid
+  question  String
+  answer    String
+  category  String?
+  createdBy String?  @db.Uuid
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  creator   User?    @relation(fields: [createdBy], references: [id])
+
+  @@map("faqs")
+}
+
+model Testimonial {
+  id         String            @id @default(uuid()) @db.Uuid
+  authorName String
+  role       String?
+  category   String?
+  companyName String?
+  companyLogoUrl String?
+  text       String
+  avatarUrl  String?
+  videoUrl   String?
+  rating     Float?
+  reviewSource String?
+  socialHandle String?
+  isFeatured Boolean?          @default(false)
+  relatedCertifiedCourseId String? @db.Uuid
+  relatedCertifiedCourse   CertifiedCourse? @relation("CertifiedCourseTestimonials", fields: [relatedCertifiedCourseId], references: [id])
+  status     TestimonialStatus @default(pending)
+  createdBy  String?           @db.Uuid
+  createdAt  DateTime          @default(now())
+  updatedAt  DateTime          @updatedAt
+  creator    User?             @relation(fields: [createdBy], references: [id])
+
+  @@map("testimonials")
+}
+
+model ReferralPartner {
+  id          String   @id @default(uuid()) @db.Uuid
+  name        String
+  logoUrl     String?
+  websiteUrl  String?
+  testimonial String?
+  quote       String?
+  highlight   Json?
+  rating      Float?
+  sortOrder   Int?
+  isActive    Boolean  @default(true)
+  createdBy   String?  @db.Uuid
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  creator     User?    @relation(fields: [createdBy], references: [id])
+  referralCodes ReferralCode[]
+
+  @@map("referral_partners")
+}
+
+model ImageAsset {
+  id        String   @id @default(uuid()) @db.Uuid
+  url       String
+  sourceUrl String
+  mimeType  String?
+  width     Int?
+  height    Int?
+  createdBy String?  @db.Uuid
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  creator   User?    @relation(fields: [createdBy], references: [id])
+
+  @@map("image_assets")
+}
+
+model ReferralCode {
+  id        String   @id @default(uuid()) @db.Uuid
+  code      String   @unique
+  partnerId String?  @db.Uuid
+  metadata  Json?
+  createdBy String?  @db.Uuid
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  partner   ReferralPartner? @relation(fields: [partnerId], references: [id])
+  creator   User?   @relation(fields: [createdBy], references: [id])
+
+  @@map("referral_codes")
+}
+
+model Course {
+  id                   String        @id @default(uuid()) @db.Uuid
+  title                String
+  slug                 String        @unique
+  description          String?
+  shortDescription     String?
+  microDescription     String?
+  heroSubTitle         String?
+  syllabus             String?
+  videoDemoUrl         String?
+  tags                 String[]
+  price                Decimal?      @db.Decimal(10, 2)
+  status               ContentStatus @default(draft)
+  // New fields for enhanced course pages
+  bannerImageUrl       String?
+  programName          String?
+  durationMonths       Int?
+  durationHours        Int?
+  deliveryModes        String[]
+  language             String?
+  aboutSectionImageUrl String?
+  masteredTools        Json?
+  curriculum           Json?
+  curriculumOutline    Json?
+  trainingOptions      Json?
+  projects             Json?
+  mentors              Json?
+  mentorSocialLinks    Json?
+  careerRoles          Json?
+  testimonials         Json?
+  reviewSummary        Json?
+  faqs                 Json?
+  relatedPrograms      Json?
+  createdBy            String?       @db.Uuid
+  createdAt            DateTime      @default(now())
+  updatedAt            DateTime      @updatedAt
+  creator              User?         @relation(fields: [createdBy], references: [id])
+
+  @@map("courses")
+}
+
+model Ebook {
+  id            String        @id @default(uuid()) @db.Uuid
+  title         String
+  slug          String        @unique
+  description   String?
+  coverImageUrl String?
+  pdfUrl        String
+  tags          String[]
+  status        ContentStatus @default(draft)
+  createdBy     String?       @db.Uuid
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  creator       User?         @relation(fields: [createdBy], references: [id])
+
+  @@map("ebooks")
+}
+
+model ShortCourse {
+  id           String        @id @default(uuid()) @db.Uuid
+  title        String
+  slug         String        @unique
+  description  String?
+  heroImageUrl String?
+  fallbackImageUrl String?
+  syllabus     String?
+  videoDemoUrl String?
+  tags         String[]
+  category     String?
+  price        Decimal?      @db.Decimal(10, 2)
+  status       ContentStatus @default(draft)
+  faqs         Json?
+  testimonials Json?
+  createdBy    String?       @db.Uuid
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  creator      User?         @relation(fields: [createdBy], references: [id])
+
+  @@map("short_courses")
+}
+
+model CertifiedCourse {
+  id           String        @id @default(uuid()) @db.Uuid
+  title        String
+  slug         String        @unique
+  description  String?
+  syllabus     String?
+  videoDemoUrl String?
+  tags         String[]
+  price        Decimal?      @db.Decimal(10, 2)
+  status       ContentStatus @default(draft)
+  badgeLabel   String?
+  landingCardImageUrl String?
+  landingShortText String?
+  profileImageUrl String?
+  landingHighlights Json?
+  reviewSummary Json?
+  averageRating Float?
+  reviewCount   Int?
+  createdBy    String?       @db.Uuid
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  creator      User?         @relation(fields: [createdBy], references: [id])
+  landingTestimonials Testimonial[] @relation("CertifiedCourseTestimonials")
+
+  @@map("certified_courses")
+}
+
+model StudyAbroad {
+  id           String               @id @default(uuid()) @db.Uuid
+  city         String
+  country      String?
+  destinationType String?
+  imageUrl     String?
+  universities String[]
+  avgTuition   Decimal?             @db.Decimal(10, 2)
+  livingCost   Decimal?             @db.Decimal(10, 2)
+  pricePerYear Decimal?             @db.Decimal(10, 2)
+  durationMonths Int?
+  partTimeAvailable Boolean?
+  description  String?
+  tags         String[]
+  programs     StudyAbroadProgram[]
+  destinationHighlights Json?
+  filterOptions Json?
+  programDetails Json?
+  testimonialBlocks Json?
+  faqs         Json?
+  status       ContentStatus        @default(draft)
+  createdBy    String?              @db.Uuid
+  createdAt    DateTime             @default(now())
+  updatedAt    DateTime             @updatedAt
+  creator      User?                @relation(fields: [createdBy], references: [id])
+
+  @@map("study_abroad")
+}
+
+model TrainingProgram {
+  id                   String           @id @default(uuid()) @db.Uuid
+  programName          String?
+  programTitle         String?
+  title                String
+  slug                 String           @unique
+  description          String
+  syllabus             String?
+  videoDemoUrl         String?
+  tags                 String[]
+  price                Float
+  status               ContentStatus    @default(draft)
+  trainingType         TrainingTypeEnum
+  programTrainingType  TrainingType?    @default(COLLEGE)
+  tool                 String?
+  cardImageUrl         String?
+  durationMonths       Int?
+  durationHours        Int?
+  placementRate        Float?
+  successMetric        String?
+  durationSummary      String?
+  timelineSummary      String?
+  testimonialHighlight String?
+  skills               String[]         @default([])
+  masteredTools        Json?
+  curriculum           Json?
+  testimonials         Json?
+  faqs                 Json?
+  badges               String[]
+  createdBy            String?          @db.Uuid
+  createdAt            DateTime         @default(now())
+  updatedAt            DateTime         @updatedAt
+  creator              User?            @relation(fields: [createdBy], references: [id])
+
+  @@map("training_programs")
+}
+
+model Lead {
+  id            String         @id @default(uuid()) @db.Uuid
+  name          String?
+  email         String
+  organization  String?
+  phone         String?
+  requirement   String?
+  source        String?
+  createdAt     DateTime       @default(now())
+  assignedToId  String?        @db.Uuid
+  collegeId     String?        @db.Uuid
+  convertedAt   DateTime?
+  lastContactAt DateTime?
+  nextFollowUp  DateTime?
+  notes         String?
+  priority      Priority       @default(MEDIUM)
+  stage         LeadStage      @default(LEAD_GENERATED)
+  status        LeadStatus     @default(ACTIVE)
+  updatedAt     DateTime       @updatedAt
+  value         Float?
+  activities    LeadActivity[]
+  assignedTo    User?          @relation("AssignedSales", fields: [assignedToId], references: [id])
+  college       College?       @relation(fields: [collegeId], references: [id])
+
+  @@map("leads")
+}
+
+model College {
+  id                     String           @id @default(uuid()) @db.Uuid
+  name                   String
+  location               String?
+  city                   String?
+  state                  String?
+  type                   CollegeType?
+  ranking                Int?
+  enrollment             Int?
+  establishedYear        Int?
+  contactPerson          String?
+  contactEmail           String?
+  contactPhone           String?
+  totalRevenue           Float?
+  avgRating              Float?
+  assignedToId           String?          @db.Uuid
+  status                 CollegeStatus    @default(PROSPECTIVE)
+  lastTrainingAt         DateTime?
+  createdAt              DateTime         @default(now())
+  updatedAt              DateTime         @updatedAt
+  assignedTrainer        String?          @db.Uuid
+  trainers               CollegeTrainer[]
+  assignedTo             User?            @relation("AssignedSales", fields: [assignedToId], references: [id])
+  assignedTrainerDetails Trainer?         @relation("AssignedTrainer", fields: [assignedTrainer], references: [id])
+  leads                  Lead[]
+  trainings              Training[]
+  trainerBookings        TrainerBooking[] // Add trainer bookings relation
+
+  @@map("colleges")
+}
+
+model Trainer {
+  id               String           @id @default(uuid()) @db.Uuid
+  name             String
+  email            String           @unique
+  phone            String?
+  specialization   String[]
+  experience       Int?
+  rating           Float?
+  totalSessions    Int              @default(0)
+  nextSlot         DateTime?
+  location         String?
+  trainingMode     TrainingMode[]
+  languages        String[]
+  feedbackScore    Float?
+  status           TrainerStatus    @default(AVAILABLE)
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  colleges         CollegeTrainer[]
+  bookings         TrainerBooking[]
+  trainings        Training[]
+  assignedColleges College[]        @relation("AssignedTrainer")
+
+  @@map("trainers")
+}
+
+model CollegeTrainer {
+  id         String   @id @default(uuid()) @db.Uuid
+  collegeId  String   @db.Uuid
+  trainerId  String   @db.Uuid
+  assignedAt DateTime @default(now())
+  status     String   @default("active")
+  college    College  @relation(fields: [collegeId], references: [id])
+  trainer    Trainer  @relation(fields: [trainerId], references: [id])
+
+  @@unique([collegeId, trainerId])
+  @@map("college_trainers")
+}
+
+model Training {
+  id           String         @id @default(uuid()) @db.Uuid
+  title        String
+  description  String?
+  collegeId    String         @db.Uuid
+  trainerId    String         @db.Uuid
+  startDate    DateTime
+  endDate      DateTime?
+  mode         TrainingMode
+  status       TrainingStatus @default(SCHEDULED)
+  participants Int?
+  feedback     Float?
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  college      College        @relation(fields: [collegeId], references: [id])
+  trainer      Trainer        @relation(fields: [trainerId], references: [id])
+
+  @@map("trainings")
+}
+
+model LeadActivity {
+  id          String       @id @default(uuid()) @db.Uuid
+  leadId      String       @db.Uuid
+  type        ActivityType
+  description String
+  notes       String?
+  performedBy String?
+  createdAt   DateTime     @default(now())
+  lead        Lead         @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@map("lead_activities")
+}
+
+model TrainerBooking {
+  id           String        @id @default(uuid()) @db.Uuid
+  trainerId    String        @db.Uuid
+  collegeId    String?       @db.Uuid // Optional college assignment
+  bookedBy     String?       @db.Uuid // Make bookedBy optional
+  startTime    DateTime
+  endTime      DateTime
+  title        String
+  description  String?
+  status       BookingStatus @default(ACTIVE)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  bookedByUser User?         @relation(fields: [bookedBy], references: [id]) // Make relation optional
+  trainer      Trainer       @relation(fields: [trainerId], references: [id])
+  college      College?      @relation(fields: [collegeId], references: [id])
+
+  @@map("trainer_bookings")
+}
+
+enum UserRole {
+  sales
+  admin
+}
+
+enum TokenRole {
+  admin
+  sales
+}
+
+enum ContentStatus {
+  draft
+  published
+  archived
+}
+
+enum StudyAbroadProgram {
+  undergraduate
+  postgraduate
+  short_term
+  scholarship_program
+}
+
+enum TestimonialStatus {
+  pending
+  approved
+}
+
+enum TrainingTypeEnum {
+  corporate
+  college
+}
+
+enum TrainingType {
+  CORPORATE
+  COLLEGE
+}
+
+enum LeadStage {
+  LEAD_GENERATED
+  CONTACTED
+  DEMO_GIVEN
+  TRAINING_BOOKED
+  START
+  IN_CONVERSATION
+  EMAIL_WHATSAPP
+  PENDING
+  IN_PROGRESS
+  CLOSED_WON
+  FEEDBACK_COLLECTED
+  CONVERT
+  CONVERTED
+  DENIED
+}
+
+enum LeadStatus {
+  NEW
+  CONTACTED
+  QUALIFIED
+  PROPOSAL
+  NEGOTIATION
+  CLOSED_WON
+  CLOSED_LOST
+  ACTIVE
+  CONVERTED
+  DENIED
+  RECYCLED
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum CollegeType {
+  ENGINEERING
+  MEDICAL
+  MANAGEMENT
+  ARTS_SCIENCE
+  LAW
+  PHARMACY
+  ARCHITECTURE
+  OTHER
+}
+
+enum CollegeStatus {
+  PROSPECTIVE
+  ACTIVE
+  INACTIVE
+  PARTNER
+}
+
+enum TrainerStatus {
+  AVAILABLE
+  BUSY
+  UNAVAILABLE
+  NOT_AVAILABLE
+  BOOKED
+  INACTIVE
+}
+
+enum TrainingMode {
+  ONLINE
+  OFFLINE
+  HYBRID
+}
+
+enum TrainingStatus {
+  SCHEDULED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum ActivityType {
+  CALL
+  EMAIL
+  MEETING
+  DEMO
+  FOLLOW_UP
+  STAGE_CHANGE
+  ASSIGNMENT
+  NOTE
+  TRAINING_SCHEDULED
+  TRAINING_COMPLETED
+}
+
+enum BookingStatus {
+  ACTIVE
+  CANCELLED
+  COMPLETED
+}
+
+model WhatsAppMessage {
+  id           String                @id @default(uuid()) @db.Uuid
+  userId       String                @db.Uuid
+  userRole     UserRole
+  phoneNumber  String
+  message      String
+  status       WhatsAppMessageStatus @default(SENT)
+  messageId    String?
+  wapiResponse Json?
+  error        String?
+  createdAt    DateTime              @default(now())
+  updatedAt    DateTime              @updatedAt
+  user         User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("whatsapp_messages")
+}
+
+enum WhatsAppMessageStatus {
+  SENT
+  DELIVERED
+  READ
+  FAILED
+}
+
+model EmailLog {
+  id            String         @id @default(uuid()) @db.Uuid
+  userId        String         @db.Uuid
+  userRole      UserRole
+  to            String
+  subject       String
+  status        EmailStatus    @default(SENT)
+  messageId     String?
+  jobId         String?
+  transport     EmailTransport @default(API)
+  brevoResponse Json?
+  error         String?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("email_logs")
+}
+
+model EmailCampaignLog {
+  id            String              @id @default(uuid()) @db.Uuid
+  userId        String              @db.Uuid
+  userRole      UserRole
+  name          String
+  subject       String
+  status        EmailCampaignStatus @default(CREATED)
+  campaignId    String?
+  jobId         String?
+  brevoResponse Json?
+  error         String?
+  sentAt        DateTime?
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+  user          User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("email_campaign_logs")
+}
+
+enum EmailStatus {
+  SENT
+  DELIVERED
+  OPENED
+  CLICKED
+  BOUNCED
+  FAILED
+  QUEUED
+}
+
+enum EmailTransport {
+  API
+  SMTP
+}
+
+enum EmailCampaignStatus {
+  CREATED
+  SCHEDULED
+  SENT
+  QUEUED
+  FAILED
+}
+
+model EmailTemplate {
+  id          String   @id @default(uuid()) @db.Uuid
+  name        String
+  subject     String
+  htmlContent String   @db.Text
+  textContent String?  @db.Text
+  description String?
+  category    String?  // e.g., 'welcome', 'follow-up', 'conversion', etc.
+  isActive    Boolean  @default(true)
+  createdBy   String   @db.Uuid
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  user        User     @relation("EmailTemplateCreator", fields: [createdBy], references: [id], onDelete: Cascade)
+  automations EmailAutomation[]
+
+  @@map("email_templates")
+}
+
+model EmailAutomation {
+  id              String            @id @default(uuid()) @db.Uuid
+  name            String
+  description     String?
+  triggerType     AutomationTrigger // e.g., LEAD_CREATED, LEAD_STAGE_CHANGED, etc.
+  triggerCondition Json?            // Additional conditions (e.g., stage value, status value)
+  templateId      String            @db.Uuid
+  isActive        Boolean           @default(true)
+  delayMinutes    Int?              @default(0) // Delay before sending (in minutes)
+  createdBy       String            @db.Uuid
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  template        EmailTemplate     @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  user            User              @relation("EmailAutomationCreator", fields: [createdBy], references: [id], onDelete: Cascade)
+  executionLogs   EmailAutomationLog[]
+
+  @@map("email_automations")
+}
+
+model EmailAutomationLog {
+  id           String          @id @default(uuid()) @db.Uuid
+  automationId String          @db.Uuid
+  leadId       String?         @db.Uuid
+  email        String
+  status       AutomationStatus @default(PENDING)
+  sentAt       DateTime?
+  error        String?
+  createdAt    DateTime        @default(now())
+  automation   EmailAutomation @relation(fields: [automationId], references: [id], onDelete: Cascade)
+
+  @@map("email_automation_logs")
+}
+
+model Notification {
+  id          String           @id @default(uuid()) @db.Uuid
+  userId      String           @db.Uuid
+  type        NotificationType
+  title       String
+  message     String
+  isRead      Boolean          @default(false)
+  metadata    Json?            // Additional data (e.g., emailId, leadId, etc.)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  user        User             @relation("UserNotifications", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("notifications")
+}
+
+enum AutomationTrigger {
+  LEAD_CREATED
+  LEAD_STAGE_CHANGED
+  LEAD_STATUS_CHANGED
+  LEAD_ASSIGNED
+  LEAD_CONVERTED
+  CUSTOM
+}
+
+enum AutomationStatus {
+  PENDING
+  SENT
+  FAILED
+  SKIPPED
+}
+
+enum NotificationType {
+  EMAIL_SENT
+  EMAIL_FAILED
+  EMAIL_DELIVERED
+  EMAIL_OPENED
+  AUTOMATION_TRIGGERED
+  AUTOMATION_FAILED
+  BULK_EMAIL_COMPLETED
+  SYSTEM
+}

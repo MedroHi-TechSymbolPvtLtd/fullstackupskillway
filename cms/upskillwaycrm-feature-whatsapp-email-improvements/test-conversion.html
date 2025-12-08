@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Lead Conversion Test</title>
+</head>
+<body>
+    <h1>Lead Conversion Test</h1>
+    <button onclick="runTest()">Run Conversion Test</button>
+    <button onclick="checkStorage()">Check Storage</button>
+    <button onclick="clearStorage()">Clear Storage</button>
+    <div id="results"></div>
+
+    <script type="module">
+        // Mock the services for testing
+        window.testConversion = async function() {
+            console.log('🧪 Starting Lead-to-College Conversion Test...');
+            
+            try {
+                // Step 1: Create a test lead in localStorage
+                const testLead = {
+                    id: Date.now(),
+                    name: 'Test Lead for Conversion',
+                    email: 'test@example.com',
+                    phone: '+1234567890',
+                    organization: 'Test University for Conversion',
+                    requirement: 'Need programming courses for students',
+                    source: 'Test',
+                    status: 'qualified',
+                    stage: 'QUALIFIED',
+                    priority: 'HIGH',
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString(),
+                    linkedCollegeId: null,
+                    conversionDate: null
+                };
+                
+                // Store the test lead in localStorage
+                const crmData = JSON.parse(localStorage.getItem('crm-data') || '{"leads": [], "colleges": [], "trainers": [], "users": []}');
+                crmData.leads.push(testLead);
+                localStorage.setItem('crm-data', JSON.stringify(crmData));
+                
+                console.log('✅ Step 1: Test lead created:', testLead);
+                
+                // Step 2: Simulate college creation (since we can't easily test the full service here)
+                const testCollege = {
+                    id: Date.now() + 1000,
+                    name: testLead.organization,
+                    status: 'ACTIVE',
+                    type: 'EDUCATIONAL_INSTITUTION',
+                    contactEmail: testLead.email,
+                    contactPhone: testLead.phone,
+                    sourceLeadId: testLead.id,
+                    conversionDate: new Date().toISOString(),
+                    description: testLead.requirement,
+                    notes: `Automatically created from lead conversion.\nOriginal lead: ${testLead.name} (ID: ${testLead.id})`,
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString()
+                };
+                
+                // Store the college in localStorage
+                const collegesData = JSON.parse(localStorage.getItem('colleges-data') || '[]');
+                collegesData.push(testCollege);
+                localStorage.setItem('colleges-data', JSON.stringify(collegesData));
+                
+                console.log('✅ Step 2: Test college created:', testCollege);
+                
+                return {
+                    success: true,
+                    testLead,
+                    createdCollege: testCollege,
+                    message: `Successfully created test conversion: "${testLead.name}" to college "${testCollege.name}"`
+                };
+                
+            } catch (error) {
+                console.error('❌ Test failed:', error);
+                return {
+                    success: false,
+                    error: error.message,
+                    message: `Test failed: ${error.message}`
+                };
+            }
+        };
+
+        window.runTest = async function() {
+            const result = await testConversion();
+            document.getElementById('results').innerHTML = `
+                <h2>Test Result:</h2>
+                <pre>${JSON.stringify(result, null, 2)}</pre>
+            `;
+        };
+
+        window.checkStorage = function() {
+            const crmData = JSON.parse(localStorage.getItem('crm-data') || '{"leads": [], "colleges": [], "trainers": [], "users": []}');
+            const collegesData = JSON.parse(localStorage.getItem('colleges-data') || '[]');
+            
+            const convertedColleges = collegesData.filter(college => college.sourceLeadId);
+            
+            document.getElementById('results').innerHTML = `
+                <h2>Storage Check:</h2>
+                <p><strong>CRM Leads:</strong> ${crmData.leads.length}</p>
+                <p><strong>Total Colleges:</strong> ${collegesData.length}</p>
+                <p><strong>Converted Colleges:</strong> ${convertedColleges.length}</p>
+                <h3>Colleges Data:</h3>
+                <pre>${JSON.stringify(collegesData, null, 2)}</pre>
+            `;
+        };
+
+        window.clearStorage = function() {
+            localStorage.removeItem('crm-data');
+            localStorage.removeItem('colleges-data');
+            localStorage.removeItem('lead_conversion_notifications');
+            localStorage.removeItem('lead_conversion_audit');
+            document.getElementById('results').innerHTML = '<p>Storage cleared!</p>';
+        };
+    </script>
+</body>
+</html>

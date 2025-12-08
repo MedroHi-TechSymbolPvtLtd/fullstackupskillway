@@ -1,0 +1,96 @@
+/* Testimonial Card Styles */
+/* This CSS ensures cards have dynamic height and proper text wrapping */
+
+.testimonial-card {
+  /* Card Container */
+  background-color: white;
+  border-radius: 0.75rem; /* rounded-xl */
+  padding: 1.5rem; /* p-6 */
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); /* shadow-lg */
+  transition: all 0.3s ease;
+  margin: 0 1rem; /* mx-4 */
+  width: 280px;
+  border: 1px solid #f3f4f6; /* border-gray-100 */
+  display: flex;
+  flex-direction: column;
+  
+  /* Dynamic Height Properties */
+  height: auto;
+  min-height: 320px;
+  overflow: visible;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+.testimonial-card:hover {
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04); /* shadow-xl */
+}
+
+/* Testimonial Text - Ensures full visibility */
+.testimonial-card p {
+  word-break: break-word;
+  overflow-wrap: break-word;
+  overflow: visible;
+  flex: 1 1 auto;
+  min-height: 60px;
+}
+
+/* Parent Container for Horizontal Scrolling */
+.testimonials-container {
+  width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  white-space: nowrap;
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+}
+
+/* Scrollable Row Container */
+.testimonials-row {
+  display: inline-flex;
+  flex-direction: row;
+  align-items: flex-start;
+  will-change: transform;
+  transform: translateZ(0); /* GPU acceleration */
+}
+
+/* Individual Card Wrapper in Row */
+.testimonial-card-wrapper {
+  display: inline-flex;
+  flex-shrink: 0;
+  flex-direction: row;
+  align-items: flex-start;
+}
+
+/* Hide scrollbar but keep functionality (optional) */
+.testimonials-container::-webkit-scrollbar {
+  height: 8px;
+}
+
+.testimonials-container::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 10px;
+}
+
+.testimonials-container::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 10px;
+}
+
+.testimonials-container::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Responsive adjustments */
+@media (max-width: 640px) {
+  .testimonial-card {
+    width: 260px;
+    min-height: 300px;
+    padding: 1.25rem; /* p-5 */
+  }
+}
+
+

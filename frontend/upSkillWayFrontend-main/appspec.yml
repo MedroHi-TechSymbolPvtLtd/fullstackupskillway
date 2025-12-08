@@ -1,0 +1,34 @@
+version: 0.0
+os: linux
+
+files:
+  - source: scripts/
+    destination: /home/ec2-user/app/scripts
+    overwrite: true
+
+  - source: Dockerfile
+    destination: /home/ec2-user/app
+    overwrite: true
+
+  - source: nginx.conf
+    destination: /home/ec2-user/app
+    overwrite: true
+
+hooks:
+  BeforeInstall:
+    - location: scripts/clean.sh
+      timeout: 300
+      runas: root
+    - location: scripts/permissions.sh
+      timeout: 300
+      runas: ec2-user
+
+  ApplicationStop:
+    - location: scripts/stop_docker.sh
+      timeout: 300
+      runas: ec2-user
+
+  AfterInstall:
+    - location: scripts/start_docker.sh
+      timeout: 300
+      runas: ec2-user
