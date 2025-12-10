@@ -7,7 +7,11 @@ dotenv.config();
 // Helper function to get allowed origins
 const getAllowedOrigins = (): string[] => {
   if (process.env.NODE_ENV === 'production') {
-    return [process.env.FRONTEND_URL || 'https://yourproductiondomain.com'];
+    return [process.env.FRONTEND_URL || 'https://upskillway.com',
+    'https://www.upskillway.com',
+    'https://api.upskillway.com',
+    'https://cms.upskillway.com'
+];
   }
 
   // Development origins
