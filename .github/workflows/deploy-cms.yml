@@ -1,0 +1,41 @@
+name: Deploy CMS (EC2)
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - "cms/**"
+      - ".github/workflows/deploy-cms.yml"
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Deploy CMS to EC2
+        uses: appleboy/ssh-action@v0.1.7
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            cd ${{ secrets.EC2_PROJECT_PATH }}
+
+            echo "🟡 Pulling latest CMS changes..."
+            git pull origin main
+
+            echo "🟡 Building CMS..."
+            cd cms/upskillwaycrm-feature-whatsapp-email-improvements
+            npm install
+            npm run build
+
+            echo "🟢 Deploying CMS build to NGINX..."
+            sudo rm -rf /var/www/cms/*
+            sudo cp -r dist/* /var/www/cms/
+
+            sudo systemctl restart nginx
+
+            echo "✅ CMS deployed successfully!"
