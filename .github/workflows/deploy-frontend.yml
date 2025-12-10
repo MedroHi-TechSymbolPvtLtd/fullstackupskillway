@@ -1,41 +1,52 @@
-name: Deploy Frontend (EC2)
+name: Deploy Frontend (Advanced)
 
 on:
   push:
-    branches: [ main ]
+    branches: [ "main" ]
     paths:
-      - "frontend/**"
-      - ".github/workflows/deploy-frontend.yml"
+      - "frontend/upSkillWayFrontend-main/**"
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout Repository
+      - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Deploy Frontend to EC2
-        uses: appleboy/ssh-action@v0.1.7
+      - name: Build production frontend
+        run: |
+          cd frontend/upSkillWayFrontend-main
+          npm install
+          npm run build
+          tar -czf frontend-dist.tar.gz dist
+
+      - name: Upload to EC2 and activate
+        uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
-          script: |
-            cd ${{ secrets.EC2_PROJECT_PATH }}
+          source: "frontend/upSkillWayFrontend-main/frontend-dist.tar.gz"
+          target: "/tmp/"
 
-            echo "🟡 Pulling latest frontend changes..."
-            git pull origin main
+      - name: Deploy to NGINX
+        run: |
+          ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
 
-            echo "🟡 Building frontend..."
-            cd frontend/upSkillWayFrontend-main
-            npm install
-            npm run build
+          set -e
+          FRONTEND_PATH="/var/www/upskillway"
 
-            echo "🟢 Deploying frontend to NGINX..."
-            sudo rm -rf /var/www/upskillway/*
-            sudo cp -r dist/* /var/www/upskillway/
+          echo "📦 Deploying new frontend…"
+          sudo rm -rf $FRONTEND_PATH/*
+          sudo tar -xzf /tmp/frontend-dist.tar.gz -C $FRONTEND_PATH
 
-            sudo systemctl restart nginx
+          echo "♻ Reloading NGINX…"
+          sudo systemctl reload nginx
 
-            echo "✅ Frontend deployed successfully!"
+          echo "🧹 Cleaning up…"
+          rm /tmp/frontend-dist.tar.gz
+
+          echo "📜 Frontend deployed at $(date)" >> ~/deploy-log-frontend.txt
+
+          EOF
