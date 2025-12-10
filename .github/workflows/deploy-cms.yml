@@ -1,41 +1,52 @@
-name: Deploy CMS (EC2)
+name: Deploy CMS (Advanced)
 
 on:
   push:
-    branches: [ main ]
+    branches: [ "main" ]
     paths:
-      - "cms/**"
-      - ".github/workflows/deploy-cms.yml"
+      - "cms/upskillwaycrm-feature-whatsapp-email-improvements/**"
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout Repository
+      - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Deploy CMS to EC2
-        uses: appleboy/ssh-action@v0.1.7
+      - name: Install SSH key
+        uses: webfactory/ssh-agent@v0.7.0
         with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USER }}
-          key: ${{ secrets.EC2_SSH_KEY }}
-          script: |
-            cd ${{ secrets.EC2_PROJECT_PATH }}
+          ssh-private-key: ${{ secrets.EC2_SSH_KEY }}
 
-            echo "🟡 Pulling latest CMS changes..."
-            git pull origin main
+      - name: Build CMS
+        run: |
+          cd cms/upskillwaycrm-feature-whatsapp-email-improvements
+          npm install
+          npm run build
+          tar -czf cms-dist.tar.gz dist
 
-            echo "🟡 Building CMS..."
-            cd cms/upskillwaycrm-feature-whatsapp-email-improvements
-            npm install
-            npm run build
+      - name: Upload and Deploy on EC2
+        run: |
+          scp -o StrictHostKeyChecking=no cms/upskillwaycrm-feature-whatsapp-email-improvements/cms-dist.tar.gz \
+            ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:/tmp/cms-dist.tar.gz
 
-            echo "🟢 Deploying CMS build to NGINX..."
-            sudo rm -rf /var/www/cms/*
-            sudo cp -r dist/* /var/www/cms/
+          ssh ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
+          
+          set -e
+          CMS_PATH="/var/www/cms"
 
-            sudo systemctl restart nginx
+          echo "📦 Extracting CMS bundle…"
+          sudo rm -rf $CMS_PATH/*
+          sudo tar -xzf /tmp/cms-dist.tar.gz -C $CMS_PATH
 
-            echo "✅ CMS deployed successfully!"
+          echo "🔄 Restarting NGINX…"
+          sudo systemctl reload nginx
+
+          echo "🧹 Cleaning temporary files…"
+          rm /tmp/cms-dist.tar.gz
+
+          echo "📜 Deployment logged"
+          echo "CMS deployed at $(date)" >> ~/deploy-log-cms.txt
+
+          EOF
