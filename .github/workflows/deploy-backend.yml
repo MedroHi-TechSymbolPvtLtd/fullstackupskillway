@@ -23,7 +23,8 @@ jobs:
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
           
-          set -e  # fail on error
+          set -e  # Stop on error
+
           PROJECT="${{ secrets.EC2_PROJECT_PATH }}/backend/upskillwaybackend-twilio"
 
           echo "📌 Pulling latest backend code…"
@@ -31,19 +32,24 @@ jobs:
           git fetch origin main
           git reset --hard origin/main
 
-          echo "📦 Installing backend dependencies…"
-          npm install --production
+          echo "📦 Installing backend dependencies (including dev)…"
+          npm install --include=dev --legacy-peer-deps
 
-          echo "🧩 Running Prisma migrations…"
-          npx prisma generate || true
+          echo "🛠 Installing global TypeScript tools…"
+          sudo npm install -g typescript ts-node
 
-          echo "🔍 Running backend health check…"
-          npm run build
+          echo "🧩 Generating Prisma client…"
+          npx prisma generate
+
+          echo "🏗 Building backend (tsc)…"
+          npx tsc
 
           echo "🟢 Restarting backend with PM2 (zero downtime)…"
           pm2 reload upskillway-api || pm2 start dist/app.js --name upskillway-api
 
           echo "📜 Writing deployment log…"
           echo "Backend deployed at $(date)" >> ~/deploy-log-backend.txt
+
+          echo "🎉 Backend deployment completed successfully!"
 
           EOF
