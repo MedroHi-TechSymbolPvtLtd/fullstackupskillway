@@ -5,10 +5,8 @@
  */
 
 const config = {
-  // API Configuration
-  // Use VITE_API_BASE_URL in production. Fallback to the provided production API URL.
-  apiBaseUrl: import.meta.env.VITE_API_BASE_URL || 'https://65.1.251.7:3000/api/v1',
-  
+  apiBaseUrl: import.meta.env.VITE_API_BASE_URL || "https://api.upskillway.com/api/v1",
+
   // Environment
   isDevelopment: import.meta.env.DEV,
   isProduction: import.meta.env.PROD,
@@ -17,12 +15,12 @@ const config = {
 
 // Validate required environment variables
 const validateConfig = () => {
-  const required = ['apiBaseUrl'];
+  const required = ["apiBaseUrl"];
   const missing = required.filter(key => !config[key]);
-  
+
   if (missing.length > 0) {
     console.warn(
-      `Missing environment variables: ${missing.join(', ')}. Using default values.`
+      `Missing environment variables: ${missing.join(", ")}. Using default values.`
     );
   }
 };
