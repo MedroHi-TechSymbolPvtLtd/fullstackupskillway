@@ -1,21 +1,28 @@
 /**
  * Environment Configuration
+ * Centralized access to environment variables
+ * All environment variables must be prefixed with VITE_ to be accessible in the browser
  */
 
 const config = {
-  // Always use environment variable for API base URL
-  apiBaseUrl: import.meta.env.VITE_API_BASE_URL,
+  // API Configuration
+  apiBaseUrl: import.meta.env.VITE_API_BASE_URL || 'https://api.upskillway.com/api/v1',
 
-  // Environment info
+  // Environment
   isDevelopment: import.meta.env.DEV,
   isProduction: import.meta.env.PROD,
   mode: import.meta.env.MODE,
 };
 
-// Validate environment
+// Validate required environment variables
 const validateConfig = () => {
-  if (!config.apiBaseUrl) {
-    console.warn("⚠️ Missing VITE_API_BASE_URL! API calls will fail.");
+  const required = ['apiBaseUrl'];
+  const missing = required.filter(key => !config[key]);
+
+  if (missing.length > 0) {
+    console.warn(
+      `Missing environment variables: ${missing.join(', ')}. Using default values.`
+    );
   }
 };
 
